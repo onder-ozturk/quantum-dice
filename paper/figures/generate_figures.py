@@ -23,11 +23,10 @@ import matplotlib
 # Headless
 matplotlib.use("Agg")
 
-# Path hack for qiskit + dice
+# Path hack so the circuit figure can import the production dice builder.
+# qiskit is imported lazily inside make_circuit_figure() so the other
+# (pure-matplotlib) figures regenerate without a qiskit install.
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..', 'quantum-service')))
-
-from qiskit import QuantumCircuit
-from app.dice import build_dice_circuit
 
 HERE = os.path.dirname(__file__)
 
@@ -40,6 +39,7 @@ def save_tight(fig, name):
 
 # 1. Circuit diagram for 6 qubits (H on all + measure)
 def make_circuit_figure():
+    from app.dice import build_dice_circuit  # lazy: only this figure needs qiskit
     qc = build_dice_circuit(2)  # exactly the production circuit
     # Make it nicer: add labels
     # qiskit draw mpl
@@ -155,53 +155,49 @@ def make_observed_bars():
     plt.tight_layout()
     return save_tight(fig, "aer-observed-frequencies.pdf")
 
-# 5. Simple backend / service contract diagram
+# 5. Service-contract / architecture diagram (restrained single-accent palette)
 def make_backend_diagram():
-    fig, ax = plt.subplots(figsize=(9.5, 5.5))
+    fig, ax = plt.subplots(figsize=(9.5, 4.0))
     ax.set_xlim(0, 12)
-    ax.set_ylim(0, 7)
+    ax.set_ylim(2.6, 7.1)
     ax.axis("off")
 
-    # Boxes
-    def box(x, y, w, h, text, color="#F8F9FA", ec="#2C3E50"):
-        b = FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.03", facecolor=color, edgecolor=ec, linewidth=1.2)
-        ax.add_patch(b)
-        ax.text(x + w/2, y + h/2, text, ha="center", va="center", fontsize=8, wrap=True)
+    EDGE, MUTED, FILL, ACCENT = "#34495E", "#5D6D7E", "#F4F6F7", "#EAF2F8"
 
-    # Left: client
-    box(0.3, 4.5, 2.2, 1.8, "Android Client\n(EkaTavlaEngine)\n\nobserveDice(forced)\n→ Roll(d1,d2)", "#E8F8F5", "#1ABC9C")
-    # Arrow
-    ax.annotate("", xy=(3.15, 5.4), xytext=(2.5, 5.4), arrowprops=dict(arrowstyle="->", color="#1ABC9C", lw=1.5))
-    ax.text(2.82, 5.95, "GET /roll", fontsize=7, color="#1ABC9C", ha="center",
-            bbox=dict(boxstyle="round,pad=0.1", facecolor="white", edgecolor="none"))
+    def box(x, y, w, h, text, fill=FILL):
+        ax.add_patch(FancyBboxPatch((x, y), w, h, boxstyle="round,pad=0.03",
+                     facecolor=fill, edgecolor=EDGE, linewidth=1.0))
+        ax.text(x + w / 2, y + h / 2, text, ha="center", va="center",
+                fontsize=8.5, color="#212F3D")
 
-    # Service
-    box(3.2, 3.5, 2.8, 3.5, "Quantum Dice Service\n(FastAPI)\n\n• /roll\n• build hadamard-6q\n• dispatch Aer / IBM\n• pick_valid_dice\n• fallback flag", "#FCF3CF", "#F39C12")
+    def arrow(x0, y0, x1, y1, color=EDGE, lw=1.3, ls="-"):
+        ax.annotate("", xy=(x1, y1), xytext=(x0, y0),
+                    arrowprops=dict(arrowstyle="-|>", color=color, lw=lw, ls=ls))
 
-    # Aer
-    box(6.8, 5.0, 2.4, 1.6, "Qiskit Aer\n(simulator)\nideal Born sampling", "#D5F5E3", "#27AE60")
-    # IBM
-    box(6.8, 3.0, 2.4, 1.6, "IBM Quantum\n(least-busy real)\n+ timeout fallback", "#FADBD8", "#E74C3C")
+    # Client -> service
+    box(0.3, 4.5, 2.2, 1.8, "Android client\n(EkaTavla engine)\n\ncalls GET /roll")
+    arrow(2.5, 5.4, 3.15, 5.4)
 
-    # Arrows service to backends
-    ax.annotate("", xy=(6.8,5.8), xytext=(6.0,5.5), arrowprops=dict(arrowstyle="->", color="#27AE60", lw=1.2))
-    ax.annotate("", xy=(6.8,3.8), xytext=(6.0,4.2), arrowprops=dict(arrowstyle="->", color="#E74C3C", lw=1.2))
-    ax.text(6.3, 4.9, "or", fontsize=7)
+    # Service (the single accent box)
+    box(3.2, 3.6, 2.8, 3.3,
+        "Quantum dice service\n(FastAPI)\n\nbuild hadamard-6q\ndispatch Aer / IBM\npick_valid_dice\nprovenance + fallback",
+        fill=ACCENT)
 
-    # Fallback arrow
-    ax.annotate("", xy=(6.8,3.8), xytext=(9.2,5.0), arrowprops=dict(arrowstyle="->", color="#E74C3C", lw=1.0, ls="--"))
-    ax.text(8.3, 4.6, "timeout / error\n→ transparent Aer\n(fallback=true)", fontsize=6.5, color="#C0392B", ha="center")
+    # Backends
+    box(6.8, 5.0, 2.4, 1.6, "Qiskit Aer\n(simulator)\nideal Born sampling")
+    box(6.8, 3.0, 2.4, 1.6, "IBM Quantum\n(least-busy device)")
+    arrow(6.0, 5.5, 6.8, 5.8, lw=1.1)
+    arrow(6.0, 4.2, 6.8, 3.8, lw=1.1)
+    ax.text(6.35, 4.85, "or", fontsize=7.5, color=MUTED, ha="center")
 
-    # Output
-    ax.annotate("", xy=(10.5,5.4), xytext=(9.2,5.4), arrowprops=dict(arrowstyle="->", color="#2C3E50", lw=1.5))
-    box(10.3, 4.5, 1.5, 1.8, "Game\nEngine\n(classic\nRoll)", "#EBF5FB", "#3498DB")
+    # Fallback: on IBM timeout the service transparently returns an Aer result
+    arrow(7.6, 4.6, 7.6, 5.0, color=MUTED, lw=1.0, ls="--")
+    ax.text(8.3, 4.8, "fallback", fontsize=7.5, color=MUTED, ha="center",
+            va="center", style="italic")
 
-    # Bottom note
-    ax.text(6, 1.5, "Key contract: The game engine receives only classical (d1,d2) ∈ {1..6}².\n"
-                   "The same circuit + rejection sampling math is used for both Aer and IBM backends.\n"
-                   "Mathematical fairness (Propositions 1–2) is independent of which backend ultimately produced the bits.",
-            ha="center", fontsize=8, style="italic", 
-            bbox=dict(boxstyle="round", facecolor="#F4F6F7", edgecolor="#BDC3C7", alpha=0.9))
+    # Result -> game engine
+    arrow(9.2, 5.4, 10.5, 5.4)
+    box(10.3, 4.5, 1.5, 1.8, "Game engine\n(classical roll)")
 
     return save_tight(fig, "backend-contract.pdf")
 
