@@ -7,7 +7,7 @@ authors:
     orcid: "https://orcid.org/0000-0001-6460-9497"
     affiliation: "Information Technology Department, Rectorate, Kütahya Health Sciences University, Türkiye"
 year: 2026
-version: 1.1.0
+version: 1.2.0
 date-released: "2026-06-04"
 repository-code: "https://github.com/onder-ozturk/quantum-dice"
 license: MIT

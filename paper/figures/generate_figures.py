@@ -302,6 +302,74 @@ def make_mitigation_figure():
     return save_tight(fig, "ibm-mitigation.pdf")
 
 
+# 8. Repeated multi-backend run: run-to-run TVD variance (box plot) + mean bias shape
+def make_repeated_figure():
+    json_path = os.path.join(HERE, "ibm_repeated_results.json")
+    if not os.path.exists(json_path):
+        return None
+    with open(json_path) as f:
+        d = json.load(f)
+    if not d.get("backends"):
+        return None
+    backends = d["backends"]
+    names = [b["backend"].replace("ibm_", "") for b in backends]
+    n_runs = d.get("n_runs", "?")
+
+    fig, axes = plt.subplots(1, 2, figsize=(9.5, 3.9))
+
+    # Panel A: box plot of raw vs mitigated TVD over the runs, per backend
+    ax = axes[0]
+    positions, box_data, box_colors, xticks, xticklabels = [], [], [], [], []
+    pos = 1
+    for i, b in enumerate(backends):
+        raw = [r["raw_tvd_1to6"] for r in b["runs"]]
+        mit = [r["mit_tvd_1to6"] for r in b["runs"]]
+        positions += [pos, pos + 0.7]
+        box_data += [raw, mit]
+        box_colors += ["#E67E22", "#16A085"]
+        xticks.append(pos + 0.35); xticklabels.append(names[i])
+        pos += 2.0
+    bp = ax.boxplot(box_data, positions=positions, widths=0.55, patch_artist=True,
+                    showmeans=True, meanprops=dict(marker="D", markerfacecolor="white",
+                    markeredgecolor="black", markersize=4))
+    for patch, c in zip(bp["boxes"], box_colors):
+        patch.set_facecolor(c); patch.set_alpha(0.65)
+    # overlay individual run points
+    for p, data, c in zip(positions, box_data, box_colors):
+        ax.scatter(np.full(len(data), p) + np.linspace(-0.12, 0.12, len(data)),
+                   data, color=c, edgecolor="black", linewidth=0.3, s=14, zorder=3)
+    ax.set_xticks(xticks); ax.set_xticklabels(xticklabels)
+    ax.set_ylabel("TVD from uniform $1/6$")
+    ax.set_title(f"Run-to-run TVD ($N={n_runs}$ runs/backend)")
+    ax.axhline(0, color="gray", lw=0.5)
+    raw_patch = mpatches.Patch(color="#E67E22", alpha=0.65, label="raw")
+    mit_patch = mpatches.Patch(color="#16A085", alpha=0.65, label="M3-mitigated")
+    ax.legend(handles=[raw_patch, mit_patch], fontsize=8)
+
+    # Panel B: mean conditioned 1..6 distribution per backend (avg over runs) vs ideal
+    ax = axes[1]
+    faces = np.arange(1, 7)
+    width = 0.8 / len(backends)
+    colors = ["#2980B9", "#C0392B", "#8E44AD", "#27AE60"]
+    for i, b in enumerate(backends):
+        dists = np.array([r["raw_dist_1to6"] for r in b["runs"]])
+        mean = dists.mean(axis=0)
+        std = dists.std(axis=0, ddof=1) if dists.shape[0] > 1 else np.zeros(6)
+        ax.bar(faces + (i - (len(backends) - 1) / 2) * width, mean, width,
+               yerr=std, capsize=2, label=names[i],
+               color=colors[i % len(colors)], edgecolor="black", linewidth=0.4)
+    ax.axhline(1 / 6, color="gray", linestyle="--", label="ideal 1/6")
+    ax.set_xticks(faces); ax.set_xlabel("die face"); ax.set_ylabel("probability")
+    ax.set_ylim(0, 0.22)
+    ax.set_title("Mean raw $1$--$6$ distribution ($\\pm$ s.d.)")
+    ax.legend(fontsize=7)
+
+    fig.suptitle(f"Repeated hardware characterisation: run-to-run variance over {n_runs} runs/backend",
+                 fontsize=9)
+    plt.tight_layout()
+    return save_tight(fig, "ibm-repeated.pdf")
+
+
 def main():
     print("Generating figures (requires venv with qiskit + matplotlib)...")
     make_circuit_figure()
@@ -313,6 +381,8 @@ def main():
         print("Generated ibm-vs-ideal.pdf from hardware results.")
     if make_mitigation_figure():
         print("Generated ibm-mitigation.pdf from multi-backend mitigation results.")
+    if make_repeated_figure():
+        print("Generated ibm-repeated.pdf from repeated multi-backend results.")
     print("All figures generated.")
 
 if __name__ == "__main__":
