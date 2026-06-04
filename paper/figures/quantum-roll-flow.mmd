@@ -1,0 +1,14 @@
+flowchart LR
+    A[Android game] -->|GET /roll?backend=aer or ibm| B[Quantum dice service]
+    B --> C{Backend requested}
+    C -->|aer| D[Qiskit Aer]
+    C -->|ibm| E[IBM Quantum least-busy backend]
+    E -->|timeout or failure| D
+    D --> F[hadamard-6q circuit]
+    E --> F
+    F --> G[Batch measurements]
+    G --> H[Split into 3-bit dice groups]
+    H --> I{All dice in 1..6?}
+    I -->|yes| J[Return dice, backend, shots, fallback]
+    I -->|no| G
+    J --> K[observeDice forced roll]

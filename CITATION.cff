@@ -1,0 +1,16 @@
+cff-version: 1.2.0
+message: "If you use this software or data, please cite the accompanying paper."
+title: "Hadamard-Based Rejection Sampling for Fair Dice: A Low-Depth Quantum Circuit Model for Tabletop Games"
+authors:
+  - family-names: "Öztürk"
+    given-names: "Önder"
+    orcid: "https://orcid.org/0000-0001-6460-9497"
+    affiliation: "Information Technology Department, Rectorate, Kütahya Health Sciences University, Türkiye"
+year: 2026
+license: MIT
+keywords:
+  - quantum random number generation
+  - rejection sampling
+  - Hadamard circuit
+  - fair dice
+  - Qiskit

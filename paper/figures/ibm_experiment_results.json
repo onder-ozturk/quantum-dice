@@ -1,0 +1,37 @@
+{
+  "status": "done",
+  "timestamp": "2026-06-04T02:46:20.738317+00:00",
+  "backend": "ibm_marrakesh",
+  "num_qubits": 156,
+  "job_id": "d8gedtc2upec739jlc4g",
+  "shots": 4000,
+  "circuit": "hadamard-6q",
+  "raw_0to7": {
+    "counts": {
+      "0": 995,
+      "1": 996,
+      "2": 954,
+      "3": 973,
+      "4": 1026,
+      "5": 1011,
+      "6": 1034,
+      "7": 1011
+    },
+    "tvd_from_uniform_1_8": 0.01025
+  },
+  "conditioned_1to6": {
+    "counts": {
+      "1": 720,
+      "2": 706,
+      "3": 741,
+      "4": 771,
+      "5": 779,
+      "6": 783
+    },
+    "chi2": 7.0507,
+    "p_value": 0.216899,
+    "tvd_from_uniform_1_6": 0.01844
+  },
+  "acceptance_rate": 0.5625,
+  "theoretical_acceptance": 0.5625
+}

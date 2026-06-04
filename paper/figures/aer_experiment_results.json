@@ -1,0 +1,39 @@
+{
+  "timestamp": "2026-06-04T01:39:54.574153+00:00",
+  "params": {
+    "N_valid_rolls_target": 50000,
+    "shots_per_batch": 64,
+    "seed": 42,
+    "qubits_per_die": 3,
+    "circuit": "hadamard-6q"
+  },
+  "observed": {
+    "total_valid_rolls": 50000,
+    "raw_shots_sampled": 200000,
+    "raw_valid_both": 112687,
+    "raw_acceptance_rate": 0.563435,
+    "theoretical_acceptance_rate": 0.5625,
+    "expected_raw_shots_per_valid_pair": 1.7778
+  },
+  "marginal": {
+    "counts": {
+      "1": 16521,
+      "2": 16600,
+      "3": 16783,
+      "4": 16701,
+      "5": 16446,
+      "6": 16949
+    },
+    "chi2": 10.1269,
+    "p_value": 0.071719,
+    "tvd": 0.00433,
+    "expected_per_face": 16666.67
+  },
+  "joint_6x6": {
+    "chi2": 26.847,
+    "p_value": 0.836701,
+    "tvd": 0.009744,
+    "expected_per_pair": 1388.89
+  },
+  "notes": "All rolls produced via exact production roll_aer() path (build_dice_circuit + pick_valid_dice). Aer simulator is ideal Born sampling."
+}

@@ -1,0 +1,17 @@
+# secrets — never commit
+.env
+*.key
+*apikey*
+
+# python
+.venv/
+__pycache__/
+*.pyc
+
+# latex build artifacts
+*.aux
+*.bbl
+*.blg
+*.log
+*.out
+*.toc
