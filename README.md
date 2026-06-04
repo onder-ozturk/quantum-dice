@@ -1,7 +1,10 @@
 # Quantum Tavla Dice — Reproducibility Package
 
-Code, data, and manuscript for **"Hadamard-Based Rejection Sampling for Fair Dice:
-A Low-Depth Quantum Circuit Model for Tabletop Games"** (Ö. Öztürk, 2026).
+Code, data, and manuscript for **"Characterising Quantum Randomness under Classical
+Rejection Sampling in Quantum-Backend-as-a-Service Architectures: A Readout-Mitigated
+Hardware Study with a Fair-Dice Case Study"** (Ö. Öztürk, 2026). The fair-dice/Tavla
+construction is the running case study; the contribution is a quantitative account of
+how rejection-based classical post-processing transports quantum-hardware noise.
 
 Each die is encoded with three qubits; applying `H` to all of them gives a uniform
 superposition over `0..7`, and **rejecting the outcomes 0 and 7** yields an exactly
