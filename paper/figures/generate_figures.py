@@ -46,9 +46,7 @@ def make_circuit_figure():
     fig = qc.draw(output="mpl", style="iqp", initial_state=True, cregbundle=True)
     ax = fig.axes[0]
     # Die-group annotation is given in the LaTeX caption (q0-q2 = die 1, q3-q5 = die 2)
-    # to avoid floating labels; only set a properly math-rendered title here.
-    ax.set_title(r"hadamard-6q circuit: $H^{\otimes 6}$ then computational-basis measurement",
-                 fontsize=10)
+    # No internal title: the LaTeX \caption describes the circuit (avoids a title-over-caption duplicate).
     return save_tight(fig, "hadamard-6q-circuit.pdf")
 
 # 2. Rejection sampling flow (simple box+arrow diagram)
@@ -57,7 +55,6 @@ def make_rejection_flow():
     ax.set_xlim(0, 10)
     ax.set_ylim(0, 6)
     ax.axis("off")
-    ax.set_title("Rejection Sampling for Fair 1–6 Die (per shot in batch)", fontsize=11, pad=10)
 
     boxes = [
         (0.5, 4.5, "Measure 3 qubits\n→ raw X ∈ {0..7}"),
@@ -120,7 +117,6 @@ def make_bias_comparison():
     for b,p in zip(bars, rej_probs):
         ax.text(b.get_x()+b.get_width()/2, b.get_height()+0.005, f"{p:.3f}", ha="center", fontsize=7)
 
-    fig.suptitle("Why modulo produces bias while rejection sampling does not (uniform 0–7 input)", fontsize=10)
     plt.tight_layout()
     return save_tight(fig, "modulo-vs-rejection-bars.pdf")
 
@@ -146,8 +142,7 @@ def make_observed_bars():
     ax.set_xticklabels([str(f) for f in faces])
     ax.set_xlabel("Die face")
     ax.set_ylabel("Count (out of 100 000 faces)")
-    ax.set_title(f"Aer simulator frequencies (N={data['observed']['total_valid_rolls']:,} rolls, 100k faces)\n"
-                 f"χ² = {data['marginal']['chi2']:.2f}, p = {data['marginal']['p_value']:.4f}, TVD = {data['marginal']['tvd']:.4f}")
+    # No internal title: the LaTeX \caption carries the chi^2/p/TVD numbers.
     ax.legend()
     ax.axhline(exp, color="gray", linestyle=":", linewidth=0.8)
     ax.set_ylim(0, max(counts)*1.15)
@@ -166,7 +161,6 @@ def make_backend_diagram():
     ax.set_xlim(0, 12)
     ax.set_ylim(0, 7)
     ax.axis("off")
-    ax.set_title("System Architecture and Mathematical Contract", fontsize=11)
 
     # Boxes
     def box(x, y, w, h, text, color="#F8F9FA", ec="#2C3E50"):
@@ -364,8 +358,6 @@ def make_repeated_figure():
     ax.set_title("Mean raw $1$--$6$ distribution ($\\pm$ s.d.)")
     ax.legend(fontsize=7)
 
-    fig.suptitle(f"Repeated hardware characterisation: run-to-run variance over {n_runs} runs/backend",
-                 fontsize=9)
     plt.tight_layout()
     return save_tight(fig, "ibm-repeated.pdf")
 
