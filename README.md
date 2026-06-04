@@ -15,16 +15,20 @@ post-processor, the reproducible experiments, and the manuscript.
 - `quantum-service/` — the FastAPI + Qiskit dice micro-service the paper analyses
   (`app/dice.py` = circuit + rejection; `app/backends.py` = Aer / IBM runners).
 - `paper/figures/` — `generate_experiments.py` (seeded Aer run), `generate_figures.py`,
-  `run_ibm_experiment.py` (real hardware), plus `aer_experiment_results.json`,
-  `ibm_experiment_results.json`, and CSVs.
+  `run_ibm_experiment.py` (single-backend hardware) and `run_ibm_mitigated.py`
+  (two-backend hardware with M3 readout-error mitigation), plus
+  `aer_experiment_results.json`, `ibm_experiment_results.json`,
+  `ibm_mitigation_results.json`, and CSVs.
 
 See **[REPRODUCE.md](REPRODUCE.md)** for step-by-step reproduction. MIT licensed.
 
 ## Headline numbers
 - **Aer (seeded, `seed_simulator=42`, bit-for-bit reproducible):** marginal
   χ²=10.13, p=0.072, TVD=0.0043; joint 6×6 χ²=26.85, p=0.84; raw acceptance 0.56344.
-- **Real hardware (IBM `ibm_marrakesh`, 156-qubit Heron, 4000 shots):** raw 0–7
-  TVD=0.0102 from 1/8; post-rejection 1–6 TVD=0.0184 from 1/6 (percent-level device bias).
+- **Real hardware (two 156-qubit IBM Heron devices, 4000 shots each):** post-rejection
+  1–6 TVD = 0.019 (`ibm_marrakesh`) and 0.040 (`ibm_kingston`) from 1/6; M3 readout-error
+  mitigation (`mthree`) brings both to TVD ≈ 0.021 — partially recoverable, percent-level
+  device bias. (An earlier single-backend run on `ibm_marrakesh` gave raw 0–7 TVD=0.0102.)
 
 No credentials are stored in this repository; the real-hardware run requires your own
 IBM Quantum API key (see REPRODUCE.md).

@@ -177,8 +177,9 @@ def make_backend_diagram():
     # Left: client
     box(0.3, 4.5, 2.2, 1.8, "Android Client\n(EkaTavlaEngine)\n\nobserveDice(forced)\n→ Roll(d1,d2)", "#E8F8F5", "#1ABC9C")
     # Arrow
-    ax.annotate("", xy=(3.0, 5.4), xytext=(2.5, 5.4), arrowprops=dict(arrowstyle="->", color="#1ABC9C", lw=1.5))
-    ax.text(2.7, 5.7, "GET /roll?backend=aer|ibm", fontsize=7, color="#1ABC9C")
+    ax.annotate("", xy=(3.15, 5.4), xytext=(2.5, 5.4), arrowprops=dict(arrowstyle="->", color="#1ABC9C", lw=1.5))
+    ax.text(2.82, 5.95, "GET /roll", fontsize=7, color="#1ABC9C", ha="center",
+            bbox=dict(boxstyle="round,pad=0.1", facecolor="white", edgecolor="none"))
 
     # Service
     box(3.2, 3.5, 2.8, 3.5, "Quantum Dice Service\n(FastAPI)\n\n• /roll\n• build hadamard-6q\n• dispatch Aer / IBM\n• pick_valid_dice\n• fallback flag", "#FCF3CF", "#F39C12")
@@ -248,6 +249,59 @@ def make_ibm_figure():
     return save_tight(fig, "ibm-vs-ideal.pdf")
 
 
+# 7. Multi-backend hardware run + M3 readout mitigation (only if results exist)
+def make_mitigation_figure():
+    json_path = os.path.join(HERE, "ibm_mitigation_results.json")
+    if not os.path.exists(json_path):
+        return None
+    with open(json_path) as f:
+        d = json.load(f)
+    if d.get("status") != "done" or not d.get("backends"):
+        return None
+    backends = d["backends"]
+    names = [b["backend"].replace("ibm_", "") for b in backends]
+    colors = ["#2980B9", "#C0392B", "#8E44AD", "#27AE60"]
+
+    fig, axes = plt.subplots(1, 2, figsize=(9.5, 3.8))
+
+    # Panel A: raw conditioned 1..6 distribution per backend vs ideal 1/6
+    ax = axes[0]
+    faces = np.arange(1, 7)
+    width = 0.8 / len(backends)
+    for i, b in enumerate(backends):
+        dist = b["raw"]["dist_1to6"]
+        ax.bar(faces + (i - (len(backends) - 1) / 2) * width, dist, width,
+               label=names[i], color=colors[i % len(colors)], edgecolor="black", linewidth=0.4)
+    ax.axhline(1 / 6, color="gray", linestyle="--", label="ideal 1/6")
+    ax.set_xticks(faces); ax.set_xlabel("die face"); ax.set_ylabel("probability")
+    ax.set_ylim(0, 0.22)
+    ax.set_title("Raw conditioned $1$--$6$ distribution")
+    ax.legend(fontsize=7)
+
+    # Panel B: raw vs M3-mitigated TVD(1..6) per backend
+    ax = axes[1]
+    x = np.arange(len(backends))
+    raw_tvd = [b["raw"]["tvd_1to6"] for b in backends]
+    mit_tvd = [b["mitigated"]["tvd_1to6"] for b in backends]
+    w = 0.35
+    b1 = ax.bar(x - w / 2, raw_tvd, w, label="raw", color="#E67E22", edgecolor="black")
+    b2 = ax.bar(x + w / 2, mit_tvd, w, label="M3-mitigated", color="#16A085", edgecolor="black")
+    ax.set_xticks(x); ax.set_xticklabels(names)
+    ax.set_ylabel("TVD from uniform $1/6$")
+    ax.set_title("Readout-error mitigation (M3) effect")
+    ax.legend(fontsize=8)
+    for bars in (b1, b2):
+        for bar in bars:
+            ax.text(bar.get_x() + bar.get_width() / 2, bar.get_height() + 0.0008,
+                    f"{bar.get_height():.3f}", ha="center", fontsize=7)
+    ax.set_ylim(0, max(raw_tvd + mit_tvd) * 1.3)
+
+    fig.suptitle(f"Multi-backend hardware run ({d['shots']} shots each): device readout bias "
+                 f"and its partial mitigation", fontsize=9)
+    plt.tight_layout()
+    return save_tight(fig, "ibm-mitigation.pdf")
+
+
 def main():
     print("Generating figures (requires venv with qiskit + matplotlib)...")
     make_circuit_figure()
@@ -257,6 +311,8 @@ def main():
     make_backend_diagram()
     if make_ibm_figure():
         print("Generated ibm-vs-ideal.pdf from hardware results.")
+    if make_mitigation_figure():
+        print("Generated ibm-mitigation.pdf from multi-backend mitigation results.")
     print("All figures generated.")
 
 if __name__ == "__main__":

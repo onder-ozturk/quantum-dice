@@ -27,8 +27,9 @@ hardware result is present).
 ```bash
 cd paper && make bib
 ```
-Requires TeX Live with `lualatex`, `fontspec`, and Latin Modern (the paper uses fontspec).
-Produces `paper/paper.pdf` (~11 pages).
+Requires TeX Live with `pdflatex`, the `IEEEtran` document class, and `bibtex`
+(`make bib` runs pdflatex → bibtex → pdflatex×2). Produces `paper/paper.pdf`
+(~8 pages, IEEEtran two-column).
 
 ## 5. Optional: real IBM-hardware run
 You need your own **IBM Quantum Platform** account (free Open plan is enough — a few
@@ -43,3 +44,16 @@ Runs the exact `hadamard-6q` circuit on the least-busy real backend (4000 shots 
 writes `paper/figures/ibm_experiment_results.json`, then re-run step 3 to regenerate
 `ibm-vs-ideal.pdf`. The reported run used `ibm_marrakesh` (raw 0–7 TVD=0.0102, post-rejection
 1–6 TVD=0.0184); your numbers will differ by device, calibration, and run.
+
+For the **two-backend run with M3 readout-error mitigation** (paper Section IX-D / Table III),
+install `mthree` and run:
+```bash
+pip install "mthree>=3.0,<4.0"
+PYTHONPATH=quantum-service python paper/figures/run_ibm_mitigated.py
+```
+This runs the circuit on the two least-busy real backends (4000 shots each), calibrates the
+M3 readout mitigation in situ (4000 cal shots), and writes
+`paper/figures/ibm_mitigation_results.json`; re-run step 3 to regenerate `ibm-mitigation.pdf`.
+The reported run used `ibm_marrakesh` (raw 1–6 TVD=0.019) and `ibm_kingston` (raw 1–6
+TVD=0.040), both converging to TVD≈0.021 after mitigation; your numbers will differ by
+device, calibration, and run.

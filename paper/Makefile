@@ -1,15 +1,17 @@
 TEX=paper
+# IEEEtran two-column class compiles with pdflatex + bibtex (IEEEtran.bst).
+LATEX=pdflatex -interaction=nonstopmode -halt-on-error
 
 .PHONY: all bib clean
 
 all:
-	lualatex -interaction=nonstopmode -halt-on-error $(TEX).tex
+	$(LATEX) $(TEX).tex
 
 bib:
-	lualatex -interaction=nonstopmode -halt-on-error $(TEX).tex
+	$(LATEX) $(TEX).tex
 	bibtex $(TEX)
-	lualatex -interaction=nonstopmode -halt-on-error $(TEX).tex
-	lualatex -interaction=nonstopmode -halt-on-error $(TEX).tex
+	$(LATEX) $(TEX).tex
+	$(LATEX) $(TEX).tex
 
 clean:
 	rm -f $(TEX).aux $(TEX).bbl $(TEX).blg $(TEX).log $(TEX).out $(TEX).toc

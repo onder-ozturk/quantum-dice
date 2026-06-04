@@ -1,53 +1,45 @@
-\documentclass[11pt,a4paper]{article}
+\documentclass[journal]{IEEEtran}
 
-\usepackage{fontspec}
-\usepackage[main=english]{babel}
-\babelfont{rm}{Latin Modern Roman}
-\usepackage{amsmath,amssymb,amsthm}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{amsmath,amssymb}
+\usepackage{amsthm}
 \usepackage{booktabs}
 \usepackage{graphicx}
-\usepackage{geometry}
-\usepackage{hyperref}
+\usepackage{textcomp}
 \usepackage{enumitem}
-\usepackage{verbatim}
-
-\newcommand{\orcid}[1]{\href{https://orcid.org/#1}{\texttt{#1}}}
-
-\geometry{margin=2.4cm}
-\hypersetup{
-  colorlinks=true,
-  linkcolor=blue,
-  citecolor=blue,
-  urlcolor=blue
-}
+\usepackage{cite}
+\usepackage[hidelinks]{hyperref}
 
 \newtheorem{proposition}{Proposition}
 \newtheorem{lemma}{Lemma}
 \newtheorem{definition}{Definition}
 
+\begin{document}
+
 \title{Hadamard-Based Rejection Sampling for Fair Dice:\\
 A Low-Depth Quantum Circuit Model for Tabletop Games}
-\author{Önder Öztürk}
-\date{\today}
 
-\begin{document}
+\author{Önder Öztürk%
+\thanks{Ö. Öztürk is with the Information Technology Department, Rectorate, Kütahya Health Sciences University, Türkiye (ORCID: 0000-0001-6460-9497).}%
+\thanks{A reproducibility package---source code, seeded data, and manuscript sources---is openly available at \url{https://github.com/onder-ozturk/quantum-dice} (MIT-licensed).}}
+
+\markboth{Manuscript submitted to IEEE Transactions on Quantum Engineering, 2026}%
+{Öztürk: Hadamard-Based Rejection Sampling for Fair Dice}
+
 \maketitle
 
-{\footnotesize
-\noindent
-Information Technology Department, Rectorate, Kütahya Health Sciences University, Türkiye \\[0.1em]
-\orcid{0000-0001-6460-9497}
-}
-
 \begin{abstract}
-We present a practical method for producing mathematically fair six-sided dice rolls from quantum measurements. Each die is encoded with three qubits. Applying $H^{\otimes 3}$ to the all-zero state produces a uniform superposition over eight basis states. By rejecting the outcomes 0 and 7 and conditioning on the valid set $\{1,\dots,6\}$, the resulting distribution is exactly uniform ($1/6$ per face). For two dice (as required by backgammon and its variants such as Tavla), the construction extends to a six-qubit product circuit $H^{\otimes 6}$ whose marginals remain independent. The same circuit is exposed through a thin HTTP service that can dispatch to either the Qiskit Aer simulator or IBM Quantum hardware; the game engine consumes only the final classical values together with a provenance/fallback flag. We prove uniformity via elementary conditional probability, demonstrate the bias introduced by the common modulo mapping, and report reproducible (seeded) Aer experiments ($N=50{,}000$ valid rolls) whose marginal and $6\times 6$ joint face distributions are consistent with the predicted uniform law (marginal $\chi^2=10.1$ on $5$ d.o.f., $p=0.07$; joint $\chi^2=26.8$ on $35$ d.o.f., $p=0.84$). Because the Aer simulator performs ideal Born sampling, these experiments validate the sampling pipeline rather than the abstract fairness guarantee, which is already exact. A preliminary single-backend run on real hardware (IBM \texttt{ibm\_marrakesh}, $4000$ shots) exhibits the expected percent-level noise bias (post-rejection $\mathrm{TVD}=0.018$ from uniform); a systematic multi-backend characterisation is left to future work. The approach uses a single layer of Hadamard gates and incurs negligible rejection overhead, making it suitable for low-latency integration in consumer games while cleanly separating quantum sampling from classical game logic.
+We present a practical method for producing mathematically fair six-sided dice rolls from quantum measurements. Each die is encoded with three qubits. Applying $H^{\otimes 3}$ to the all-zero state produces a uniform superposition over eight basis states. By rejecting the outcomes 0 and 7 and conditioning on the valid set $\{1,\dots,6\}$, the resulting distribution is exactly uniform ($1/6$ per face). For two dice (as required by backgammon and its variants such as Tavla), the construction extends to a six-qubit product circuit $H^{\otimes 6}$ whose marginals remain independent. The same circuit is exposed through a thin HTTP service that can dispatch to either the Qiskit Aer simulator or IBM Quantum hardware; the game engine consumes only the final classical values together with a provenance/fallback flag. We prove uniformity via elementary conditional probability, demonstrate the bias introduced by the common modulo mapping, and report reproducible (seeded) Aer experiments ($N=50{,}000$ valid rolls) whose marginal and $6\times 6$ joint face distributions are consistent with the predicted uniform law (marginal $\chi^2=10.1$ on $5$ degrees of freedom (d.o.f.), $p=0.07$; joint $\chi^2=26.8$ on $35$ d.o.f., $p=0.84$). Because the Aer simulator performs ideal Born sampling, these experiments validate the sampling pipeline rather than the abstract fairness guarantee, which is already exact. Runs on two real IBM Quantum processors ($4000$ shots each) exhibit the expected percent-level noise bias (post-rejection $\mathrm{TVD}$ between $0.019$ and $0.040$ from uniform); applying matrix-free readout-error mitigation reduces the bias on the noisier device by roughly a factor of two, with both devices converging to $\mathrm{TVD}\approx 0.021$. The approach uses a single layer of Hadamard gates and incurs negligible rejection overhead, making it suitable for low-latency integration in consumer games while cleanly separating quantum sampling from classical game logic.
 \end{abstract}
 
-\noindent\textbf{Keywords:} quantum random number generation, rejection sampling, Hadamard circuit, fair dice, Qiskit, backgammon, tabletop games
+\begin{IEEEkeywords}
+Quantum random number generation, quantum rejection sampling, Hadamard circuit, fair dice, Qiskit, IBM Quantum, readout error mitigation, backgammon, tabletop games.
+\end{IEEEkeywords}
 
 \section{Introduction}
 
-Fair random number generation is fundamental to the integrity of dice-driven games. In backgammon and its regional variants (collectively ``Tavla''), the joint outcome of two independent six-sided dice directly determines the legal move set. Even small biases in the dice distribution can, over thousands of games, produce measurable advantages for one player or strategy class.
+\IEEEPARstart{F}{air} random number generation is fundamental to the integrity of dice-driven games. In backgammon and its regional variants (collectively ``Tavla''), the joint outcome of two independent six-sided dice directly determines the legal move set. Even small biases in the dice distribution can, over thousands of games, produce measurable advantages for one player or strategy class.
 
 Classical pseudorandom generators (PRNGs) or operating-system entropy sources are adequate for most entertainment software. Nevertheless, there is growing interest in \emph{verifiable} or \emph{externally auditable} randomness, especially in online or blockchain-adjacent gaming, educational demonstrations of quantum computing, and marketing of ``genuinely quantum'' experiences. Cloud-accessible quantum processors~\cite{ibmquantum2024} now make it feasible to obtain measurement samples from explicitly constructed quantum circuits and to expose them through ordinary web APIs.
 
@@ -59,9 +51,10 @@ Our contributions are:
   \item An explicit proof that the conditional distribution is uniform and a side-by-side comparison with the biased modulo mapping (Section~\ref{sec:rejection}).
   \item A production-grade service architecture that preserves the identical mathematical contract on both simulator and real hardware while providing transparent fallback (Section~\ref{sec:arch}).
   \item Large-scale experimental validation on the Qiskit Aer simulator, including $\chi^2$ goodness-of-fit tests, total-variation distances, and empirical confirmation of the per-shot acceptance probability (Section~\ref{sec:exp}).
+  \item A multi-backend hardware run on two IBM Quantum processors with matrix-free readout-error mitigation, quantifying the residual percent-level bias and how much of it is removable (Section~\ref{sec:hw}).
 \end{enumerate}
 
-Related work includes the well-known IBM ``Truly Quantum Dice'' demonstration~\cite{ibmq2024dice}, the quantum random-number-generation surveys of Herrero-Collantes and Garcia-Escartin~\cite{herrero2023quantumrng} and Ma et al.~\cite{ma2016quantum}, and the circuit construction of Orts et al.~\cite{orts2023quantum} for sampling integers inside an arbitrary interval---of which our concrete $d=6$ rule is a special case. Quantum games have previously been realised on a photonic one-way quantum computer~\cite{prevedel2007experimental} and on IBM-Q~\cite{galas2020quantum}. Classical treatments of unbiased sampling from biased sources date back to von Neumann~\cite{vonneumann1951various}, are discussed in detail by Knuth~\cite{knuth1997seminumerical}, and are codified for random-bit-generator constructions by NIST~\cite{nist80090c}. A strictly stronger goal---cryptographically \emph{certified} randomness from quantum sampling---has recently been placed on rigorous footing by Aaronson and Hung~\cite{aaronson2023certified}; we emphasise that our construction makes \emph{no} certification claim and provides no advantage over a classical generator for ordinary play. Our emphasis is narrower: a minimal, exactly analysable circuit for the concrete $d=6$ case that arises in tabletop games, together with an end-to-end engineering contract suitable for mobile deployment.
+Related work includes the well-known IBM ``Truly Quantum Dice'' demonstration~\cite{ibmq2024dice}, the quantum random-number-generation surveys of Herrero-Collantes and Garcia-Escartin~\cite{herrero2023quantumrng} and Ma et al.~\cite{ma2016quantum}, and the circuit construction of Orts et al.~\cite{orts2023quantum} for sampling integers inside an arbitrary interval---of which our concrete $d=6$ rule is a special case. Quantum games have previously been realised on a photonic one-way quantum computer~\cite{prevedel2007experimental} and on IBM-Q~\cite{galas2020quantum}. Classical treatments of unbiased sampling from biased sources date back to von Neumann~\cite{vonneumann1951various}, are discussed in detail by Knuth~\cite{knuth1997seminumerical}, and are codified for random-bit-generator constructions by NIST~\cite{nist80090c}. A strictly stronger goal---cryptographically \emph{certified} randomness from quantum sampling---was put on rigorous footing by Aaronson and Hung~\cite{aaronson2023certified} and recently demonstrated experimentally on a 56-qubit trapped-ion processor~\cite{liu2025certified}; we emphasise that our construction makes \emph{no} certification claim and provides no advantage over a classical generator for ordinary play. Recent benchmarks of gate-based quantum random-number generation on IBM superconducting hardware likewise report usable but low-throughput, high-cost-per-bit randomness~\cite{louamri2025qrng}, consistent with our own observation that a cloud quantum round-trip is, for ordinary dice, strictly more expensive than a local generator. Our emphasis is narrower: a minimal, exactly analysable circuit for the concrete $d=6$ case that arises in tabletop games, together with an end-to-end engineering contract suitable for mobile deployment.
 
 \section{Mathematical Preliminaries}
 
@@ -125,6 +118,25 @@ Figure~\ref{fig:bias} juxtaposes the two distributions.
 
 The rejection rule is realised in a few lines of classical post-processing after measurement; see the \texttt{pick\_valid\_dice} routine in the accompanying implementation.
 
+Table~\ref{tab:compare} situates the construction against the relevant prior art. We stress the honest conclusion it encodes: on fairness the method is \emph{equivalent} to textbook classical rejection sampling and offers no statistical advantage over a cryptographically secure pseudo-random generator for ordinary play. Its only distinguishing property is that the underlying bits originate in a measured quantum state, giving auditable ``quantum'' provenance---at the cost of a network round-trip and, on real hardware, residual noise (Section~\ref{sec:hw}).
+
+\begin{table*}[t]
+\centering
+\caption{Where this construction sits relative to prior art. ``Fair $d6$'' is exact uniformity in the ideal (noise-free) model. The present method matches classical rejection sampling on fairness; the quantum variants pay a network round-trip and inherit device noise.}
+\label{tab:compare}
+\begin{tabular}{lccc}
+\toprule
+Method & Fair $d6$? & Bit source & Overhead vs CSPRNG \\
+\midrule
+$H^{\otimes 3}$ then $(\cdot \bmod 6)$ & no (biased) & quantum & --- \\
+$H^{\otimes 3}$ + rejection (\emph{this work}) & yes (ideal) & quantum & higher (network, noise) \\
+von Neumann/Knuth rejection~\cite{vonneumann1951various,knuth1997seminumerical} & yes & classical & none (baseline) \\
+Arbitrary-interval circuit~\cite{orts2023quantum} & yes (general $d$) & quantum & higher \\
+CSPRNG + rejection~\cite{nist80090c} & yes & classical & cheapest \\
+\bottomrule
+\end{tabular}
+\end{table*}
+
 \section{Two Dice and Independence}
 \label{sec:two}
 
@@ -160,6 +172,26 @@ The expected number of shots until the first valid $m$-tuple is $\mathbb{E}[T_m]
 \]
 which is negligible for all practical purposes.
 
+The same recipe gives a fair $d$-sided die for any $d$: take $k=\lceil\log_2 d\rceil$ qubits, accept the first $d$ of the $2^k$ equiprobable outcomes and reject the remaining $2^k-d$. Table~\ref{tab:gen} lists the standard tabletop and role-playing dice; powers of two ($d=4,8$) need no rejection, while $d=6,10,12,20$ carry only a modest overhead.
+
+\begin{table}[tbp]
+\centering
+\caption{Generalisation to a fair $d$-sided die. $k=\lceil\log_2 d\rceil$ qubits give $2^k$ equiprobable outcomes; the first $d$ are accepted and the other $2^k-d$ rejected, so the per-die acceptance probability is $p=d/2^k$ and the expected number of raw shots per accepted value is $1/p=2^k/d$.}
+\label{tab:gen}
+\begin{tabular}{rcccc}
+\toprule
+$d$ & qubits $k$ & states $2^k$ & rejected & $\mathbb{E}[\text{shots}]=2^k/d$ \\
+\midrule
+4  & 2 & 4  & 0  & $1.00$ \\
+6  & 3 & 8  & 2  & $1.33$ \\
+8  & 3 & 8  & 0  & $1.00$ \\
+10 & 4 & 16 & 6  & $1.60$ \\
+12 & 4 & 16 & 4  & $1.33$ \\
+20 & 5 & 32 & 12 & $1.60$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
 \section{Algorithm}
 
 The end-to-end procedure executed by the service (identical for Aer and IBM) is:
@@ -188,16 +220,16 @@ The quantum sampling layer is deliberately isolated from the game engine. A ligh
 \[
 \texttt{GET /roll?backend=aer|ibm\&dice=2}.
 \]
-The response always contains the classical values `d1`, `d2`, the actual backend that served the result, a job identifier, the number of shots consumed, and a Boolean `fallback` flag. When the client requests the IBM backend but the job times out or the hardware is unavailable, the service transparently returns an Aer result with \texttt{fallback=true}; a final last-resort path uses a classical cryptographic RNG. Consequently a roll requested as ``quantum'' may in practice be served by the simulator or by a classical generator: the explicit \texttt{backend} and \texttt{fallback} fields make this provenance auditable, but a genuine quantum-hardware origin is best-effort, not guaranteed. The Android game engine never sees quantum state vectors; it receives ordinary integers that are fed directly into the classical Tavla transition function.
+The response always contains the classical values `d1`, `d2`, the actual backend that served the result, a job identifier, the number of shots consumed, and a Boolean `fallback` flag. When the client requests the IBM backend but the job times out or the hardware is unavailable, the service transparently returns an Aer result with \texttt{fallback=true}; a final last-resort path uses a classical cryptographic RNG. Consequently a roll requested as ``quantum'' may in practice be served by the simulator or by a classical generator: the explicit \texttt{backend} and \texttt{fallback} fields make this provenance auditable, but a genuine quantum-hardware origin is best-effort, not guaranteed. An application that must guarantee hardware provenance should replace this synchronous, fallback-on-timeout endpoint with an \emph{asynchronous} submit/poll interface that returns only genuine hardware results---accepting seconds-to-minutes of queue latency---and should never label a fallback roll as ``quantum.'' The synchronous design here deliberately trades that guarantee for the low, bounded latency a real-time game needs. The Android game engine never sees quantum state vectors; it receives ordinary integers that are fed directly into the classical Tavla transition function.
 
 Figure~\ref{fig:arch} depicts the data flow and the mathematical invariant that is preserved across both back-ends.
 
-\begin{figure}[tbp]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=0.98\linewidth]{figures/backend-contract.pdf}
+\includegraphics[width=0.92\textwidth]{figures/backend-contract.pdf}
 \caption{Service architecture. The identical `hadamard-6q` circuit and rejection-sampling post-processor are used for both simulator and real hardware. The game engine receives only classical die values together with provenance metadata.}
 \label{fig:arch}
-\end{figure}
+\end{figure*}
 
 \section{Experimental Validation}
 \label{sec:exp}
@@ -231,30 +263,46 @@ The $6\times 6$ contingency table of $(d_1,d_2)$ pairs was tested for joint unif
 
 Direct sampling of 200{,}000 raw shots produced 112{,}687 valid pairs, giving an empirical per-shot acceptance probability of $0.56344$, in close agreement with the theoretical value $(6/8)^2=0.5625$. The $50{,}000$ analysed rolls are the first $50{,}000$ accepted pairs of this same seeded run; returning the first accepted shot of a batch is unbiased because the raw shots are independent and identically distributed, so conditioning on ``first accepted'' preserves the uniform conditional law. With the production batch size $B=64$ the expected number of raw shots per valid pair is $\mathbb{E}[T_2]=16/9\approx 1.78$, and the probability that a batch contains no valid pair is $(7/16)^{64}\approx 10^{-23}$ (Section~\ref{sec:two}).
 
-\subsection{Preliminary hardware run}
+\subsection{Multi-backend hardware run with readout-error mitigation}
 \label{sec:hw}
 
-To probe how the ideal-circuit guarantee degrades on a physical device, we executed the identical \texttt{hadamard-6q} circuit once on the least-busy IBM Quantum processor available to us, \texttt{ibm\_marrakesh} (a 156-qubit Heron device), with $4000$ shots ($8000$ raw die values, job \texttt{d8gedtc2upec739jlc4g}). This is a single-run, single-backend measurement, intended as an honest illustration rather than a systematic characterisation.
+To probe how the ideal-circuit guarantee degrades on physical devices---and how much of that degradation is removable---we executed the identical \texttt{hadamard-6q} circuit on \emph{two} independent IBM Quantum processors, \texttt{ibm\_marrakesh} and \texttt{ibm\_kingston} (both $156$-qubit Heron devices), with $4000$ shots each ($8000$ raw die values per backend). On each backend we additionally applied M3 matrix-free measurement-error mitigation~\cite{nation2021m3} (the \texttt{mthree} package), calibrated in situ with $4000$ shots on the six measured qubits, and recomputed the conditioned distribution from the mitigated quasiprobabilities. The per-job identifiers and full distributions are recorded in the released data.
 
-The raw $0$--$7$ outcome distribution showed a small but clear readout-induced bias: total-variation distance $\mathrm{TVD}=0.0102$ from the ideal $1/8$, with a mild monotone trend (low values slightly suppressed, high values slightly enhanced). After the per-die rejection rule the conditioned face counts were $(720,706,741,771,779,783)$, giving $\chi^2=7.05$ ($5$ d.o.f., $p=0.22$) and $\mathrm{TVD}=0.0184$ from the ideal $1/6$---roughly four times the simulator residual ($0.0043$). The empirical per-shot acceptance was $0.5625$, matching the theoretical $9/16$. Figure~\ref{fig:ibm} compares both distributions to the ideal.
+Table~\ref{tab:hw} summarises the result and Figure~\ref{fig:mitig} visualises it. The two backends differ markedly in raw readout bias. On \texttt{ibm\_kingston} the conditioned $1$--$6$ distribution is clearly skewed---$\mathrm{TVD}=0.040$ from the ideal $1/6$, with $\chi^2=42.3$ ($5$ d.o.f., $p<10^{-3}$), which \emph{does} reject uniformity at this sample size---whereas on \texttt{ibm\_marrakesh} the bias is roughly half as large ($\mathrm{TVD}=0.019$, $\chi^2=7.2$, $p=0.20$, not rejected). The empirical per-shot acceptance was $0.564$ and $0.571$ respectively, both close to the theoretical $9/16=0.5625$.
 
-Two points follow. First, rejection sampling removes the \emph{structural} modulo bias but, as the Discussion (Section~\ref{sec:disc}) notes, it cannot remove \emph{hardware} bias: any skew already present in the raw $0$--$7$ samples is inherited by the conditional distribution---indeed the conditioned $\mathrm{TVD}$ here slightly exceeds the raw one. Second, even on a current device the residual unfairness is at the percent level and does not reject uniformity at the $5\%$ level for this sample size; nonetheless a deployment that advertises ``quantum dice'' should publish per-backend calibration rather than rely on the ideal guarantee. A systematic multi-backend study with readout-error mitigation and repeated runs is left to future work.
+Readout-error mitigation behaves exactly as its purpose predicts. On the noisier device (\texttt{ibm\_kingston}) M3 nearly halves the bias, from $\mathrm{TVD}=0.040$ to $0.021$; on the cleaner device (\texttt{ibm\_marrakesh}), where the raw bias is already at the percent level, mitigation marginally \emph{increases} the TVD (from $0.019$ to $0.021$), because the finite-shot sampling noise of the calibration exceeds the small readout error it removes. After mitigation both backends converge to essentially the same residual, $\mathrm{TVD}\approx 0.021$, indicating that the leftover bias is dominated by effects M3 does not address (state-preparation error and a residual, non-readout error floor) rather than by measurement error.
 
-\begin{figure}[tbp]
+Two structural points follow, independent of the device. First, rejection sampling removes the \emph{structural} modulo bias but cannot remove \emph{hardware} bias: any skew already present in the raw $0$--$7$ samples is inherited by the conditional distribution, and readout mitigation only partially recovers it. Second, the residual unfairness on current hardware is at the percent level---small, but on \texttt{ibm\_kingston} large enough to be statistically detected; a deployment that advertises ``quantum dice'' should therefore publish per-backend calibration and, where it matters, apply readout-error mitigation, rather than rely on the ideal guarantee.
+
+\begin{table}[tbp]
 \centering
-\includegraphics[width=0.98\linewidth]{figures/ibm-vs-ideal.pdf}
-\caption{Preliminary single-run hardware result on \texttt{ibm\_marrakesh} ($4000$ shots). Left: the raw measured $0$--$7$ distribution shows readout-induced bias ($\mathrm{TVD}=0.0102$ from $1/8$). Right: after rejection, the conditioned $1$--$6$ die distribution has $\mathrm{TVD}=0.0184$ from $1/6$. Rejection removes the structural modulo bias but inherits the residual hardware bias.}
-\label{fig:ibm}
-\end{figure}
+\caption{Two-backend hardware run ($4000$ shots each) of the \texttt{hadamard-6q} circuit, before and after M3 readout-error mitigation~\cite{nation2021m3}. TVD is the total-variation distance of the rejection-conditioned $1$--$6$ distribution from the ideal $1/6$; the $\chi^2$ ($5$ d.o.f.) and acceptance refer to the raw run.}
+\label{tab:hw}
+\begin{tabular}{lcccc}
+\toprule
+Backend & raw TVD & mit.\ TVD & raw $\chi^2$ ($p$) & accept. \\
+\midrule
+\texttt{ibm\_marrakesh} & $0.019$ & $0.021$ & $7.2$ ($0.20$) & $0.564$ \\
+\texttt{ibm\_kingston}  & $0.040$ & $0.021$ & $42.3$ ($<10^{-3}$) & $0.571$ \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure*}[t]
+\centering
+\includegraphics[width=0.92\textwidth]{figures/ibm-mitigation.pdf}
+\caption{Multi-backend hardware run ($4000$ shots each on the $156$-qubit Heron devices \texttt{ibm\_marrakesh} and \texttt{ibm\_kingston}). Left: the raw rejection-conditioned $1$--$6$ distribution per backend against the ideal $1/6$; \texttt{ibm\_kingston} is visibly more skewed. Right: total-variation distance from uniform before and after M3 readout-error mitigation~\cite{nation2021m3}. Mitigation nearly halves the bias on the noisier device but slightly increases it on the cleaner one, where calibration sampling noise dominates; both converge to $\mathrm{TVD}\approx 0.021$.}
+\label{fig:mitig}
+\end{figure*}
 
 The circuit diagram actually executed is shown in Figure~\ref{fig:circuit}; the rejection flow is illustrated in Figure~\ref{fig:flow}.
 
-\begin{figure}[tbp]
+\begin{figure*}[t]
 \centering
-\includegraphics[width=0.98\linewidth]{figures/hadamard-6q-circuit.pdf}
+\includegraphics[width=0.9\textwidth]{figures/hadamard-6q-circuit.pdf}
 \caption{The six-qubit circuit \texttt{hadamard-6q} used for every roll: six Hadamard gates followed by six computational-basis measurements (the classical register is bundled). Qubits $q_0$--$q_2$ encode die~1 and $q_3$--$q_5$ encode die~2; classical post-processing performs the per-die rejection test.}
 \label{fig:circuit}
-\end{figure}
+\end{figure*}
 
 \begin{figure}[tbp]
 \centering
@@ -266,25 +314,29 @@ The circuit diagram actually executed is shown in Figure~\ref{fig:circuit}; the 
 \section{Discussion}
 \label{sec:disc}
 
-The mathematical fairness guarantee holds only for the ideal circuit. On real IBM hardware, readout errors, decoherence, and gate infidelity will perturb the raw $0$--$7$ distribution before rejection. Because rejection discards two out of eight outcomes, any bias already present in the hardware samples is inherited by the conditional distribution (measured in Section~\ref{sec:hw}: $\mathrm{TVD}\approx 0.018$ on \texttt{ibm\_marrakesh}). Consequently, production deployments that advertise ``quantum dice'' should either (a) remain on the simulator, (b) publish per-backend calibration data together with the observed TVD, or (c) apply additional classical conditioning/extraction. In our service the `backend` and `fallback` fields make the provenance of every roll explicit, allowing downstream auditing.
+The mathematical fairness guarantee holds only for the ideal circuit. On real IBM hardware, readout errors, decoherence, and gate infidelity will perturb the raw $0$--$7$ distribution before rejection. Because rejection discards two out of eight outcomes, any bias already present in the hardware samples is inherited by the conditional distribution (measured in Section~\ref{sec:hw}: $\mathrm{TVD}$ from $0.019$ to $0.040$ across two backends, only partially recoverable by readout-error mitigation). Consequently, production deployments that advertise ``quantum dice'' should either (a) remain on the simulator, (b) publish per-backend calibration data together with the observed TVD, or (c) apply additional classical conditioning/extraction. In our service the `backend` and `fallback` fields make the provenance of every roll explicit, allowing downstream auditing.
 
 From a systems perspective the construction is deliberately over-engineered for a mobile game: a remote round-trip, possible queueing, and quota consumption are all incurred for randomness that a modern phone can generate locally at essentially zero cost and with cryptographic strength. The value of the present work therefore lies less in ``better dice'' than in (i) a clean pedagogical example of mapping a continuous quantum probability distribution onto a discrete uniform one, (ii) a concrete, reproducible demonstration of cloud quantum computing inside a consumer application, and (iii) an existence proof that the engineering surface between a quantum backend and a classical game engine can be reduced to a few dozen lines of well-specified code.
 
 Future extensions could include device-independent certified randomness protocols, on-device quantum simulators for zero-latency play, or generalisation to other dice geometries (e.g., 4-, 8-, 10-, 12-, 20-sided) with optimal qubit counts and minimal rejection overhead.
 
-\paragraph{Limitations.} Three limitations bound the present claims. (i) All reported statistics are from the Aer simulator; we have not benchmarked real IBM hardware, where readout and gate noise perturb the raw $0$--$7$ distribution and where qubit crosstalk could induce the inter-die correlation that the product-state argument assumes away. (ii) The exactness result concerns the ideal circuit; under the fallback path a roll may be served by the simulator or a classical RNG, so end-to-end ``quantum'' provenance is best-effort. (iii) The contribution is a clean engineering-and-pedagogy construction rather than a new quantum primitive---for ordinary play a local CSPRNG is cheaper and cryptographically stronger, and the method provides no randomness \emph{certification} in the device-independent sense.
+\paragraph{Limitations.} Three limitations bound the present claims. (i) The hardware evidence is a single run on each of two backends (Section~\ref{sec:hw}); the readout/gate-noise bias we observe should be characterised across more devices and repeated runs to estimate run-to-run variance, and the effect of qubit crosstalk on the product-state independence assumption studied---which we leave to future work. (ii) The exactness result concerns the ideal circuit; under the fallback path a roll may be served by the simulator or a classical RNG, so end-to-end ``quantum'' provenance is best-effort. (iii) The contribution is a clean engineering-and-pedagogy construction rather than a new quantum primitive---for ordinary play a local CSPRNG is cheaper and cryptographically stronger, and the method provides no randomness \emph{certification} in the device-independent sense.
 
 \section{Conclusion}
 
-We have shown that a single-layer Hadamard circuit on three qubits per die, followed by the rejection of two out of eight measurement outcomes, yields a mathematically exact uniform six-sided die. The construction extends without modification to any number of independent dice via a product state. Reproducible simulator experiments are consistent with the predicted statistics, with the caveat that an ideal simulator validates the sampling pipeline rather than the fairness guarantee itself. By exposing the sampler through a narrow, auditable HTTP contract we separate the quantum sampling concern from the classical game logic; the same contract also carries hardware-sourced bits, and a preliminary run on \texttt{ibm\_marrakesh} confirms that the guarantee degrades gracefully (percent-level bias) under device noise; a systematic multi-device characterisation remains future work.
+We have shown that a single-layer Hadamard circuit on three qubits per die, followed by the rejection of two out of eight measurement outcomes, yields a mathematically exact uniform six-sided die. The construction extends without modification to any number of independent dice via a product state. Reproducible simulator experiments are consistent with the predicted statistics, with the caveat that an ideal simulator validates the sampling pipeline rather than the fairness guarantee itself. By exposing the sampler through a narrow, auditable HTTP contract we separate the quantum sampling concern from the classical game logic; the same contract also carries hardware-sourced bits, and runs on two real IBM processors confirm that the guarantee degrades gracefully (percent-level bias) under device noise, with matrix-free readout-error mitigation recovering much of the bias on the noisier device; a larger multi-device characterisation with repeated runs remains future work.
 
 The implementation, the seeded experimental data, the generation scripts, and the figure sources are included in the repository~\cite{projectrepo}; the seeded run makes every reported number reproducible bit-for-bit.
 
+\section*{Reproducibility}
+
+All source code, the seeded experimental data, the analysis and figure scripts, and the manuscript sources are openly available~\cite{projectrepo} (tag \texttt{v1.0}, MIT-licensed). The simulator results are bit-for-bit reproducible: \texttt{generate\_experiments.py} runs the exact production circuit with \texttt{seed\_simulator}$=42$. The hardware runs used Qiskit Runtime \texttt{SamplerV2} at the default resilience level, \texttt{optimization\_level}$=1$ with the standard \texttt{translator} translation stage, and $4000$ shots per backend; \texttt{run\_ibm\_experiment.py} performs the single-backend run, and \texttt{run\_ibm\_mitigated.py} performs the two-backend run with M3 readout-error mitigation (\texttt{mthree}, calibrated with $4000$ shots). Each script records the backend name, job id, and the raw per-shot outcomes. Because hardware calibration drifts, exact device numbers are run-specific; the scripts and the saved JSON allow the procedure to be replayed on any backend.
+
 \section*{Acknowledgements}
 
-We thank the Qiskit open-source community; the Aer simulator made the reproducible experimental campaign straightforward, and the IBM Quantum Runtime primitives underpin the (not-yet-benchmarked) hardware path. The Android client and 3-D tabletop visualisation layers of Quantum Eka Tavla are outside the scope of this paper but provided the original motivation for a verifiable dice source.
+We thank the Qiskit open-source community; the Aer simulator made the reproducible experimental campaign straightforward, and the IBM Quantum Runtime primitives underpin the hardware path. We used the \texttt{mthree} package for matrix-free measurement-error mitigation. The Android client and 3-D tabletop visualisation layers of Quantum Eka Tavla are outside the scope of this paper but provided the original motivation for a verifiable dice source.
 
-\bibliographystyle{plain}
+\bibliographystyle{IEEEtran}
 \bibliography{references}
 
 \end{document}
