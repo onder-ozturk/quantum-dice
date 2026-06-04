@@ -1,6 +1,14 @@
-\documentclass[journal]{IEEEtran}
+\documentclass{ieeeaccess}
+%% ============================================================================
+%% IEEE Transactions on Quantum Engineering (TQE) uses the IEEE open-access
+%% (Access) layout. Compile this with the OFFICIAL ieeeaccess.cls that ships with
+%% the TQE/IEEE-Access template (e.g. open the "IEEE Access" template on Overleaf):
+%% that class supplies the correct TQE logo + journal branding in the header/footer.
+%% ieeeaccess.cls already loads hyperref and color — do NOT load them again here.
+%% Items to fill before submission: \doi (assigned by IEEE), \history dates,
+%% and a funding line in \tfootnote if applicable.
+%% ============================================================================
 
-\usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath,amssymb}
 \usepackage{amsthm}
@@ -10,26 +18,32 @@
 \usepackage{algorithm}
 \usepackage{algpseudocode}
 \usepackage{cite}
-\usepackage[hidelinks]{hyperref}
+\usepackage[hidelinks]{hyperref}% IEEE Access mode of ieeeaccess.cls does NOT load hyperref; we need \url/\href (also used by the bibliography)
 
 \newtheorem{proposition}{Proposition}
 \newtheorem{lemma}{Lemma}
 \newtheorem{definition}{Definition}
 
+% Compatibility shim: ieeeaccess.cls's \@makecaption reads \xfigwd, which it
+% normally sets inside its own \Figure macro. Our figures use standard
+% \begin{figure}/\begin{figure*}, so provide a default to avoid an undefined macro.
+\providecommand{\xfigwd}{0pt}
+
 \begin{document}
 
-\title{Characterising Quantum Randomness under Classical Rejection\\
-Sampling in Quantum-Backend-as-a-Service Architectures:\\
-A Readout-Mitigated Hardware Study with a Fair-Dice Case Study}
+\history{Date of publication 00 Month 0000, date of current version 00 Month 0000.}
+\doi{10.1109/TQE.2020.DOI}% placeholder — IEEE assigns the final DOI in production
 
-\author{Önder Öztürk%
-\thanks{Ö. Öztürk is with the Information Technology Department, Rectorate, Kütahya Health Sciences University, Türkiye (e-mail: onder.ozturk@ksbu.edu.tr; ORCID: 0000-0001-6460-9497).}%
-\thanks{A reproducibility package---source code, seeded data, and manuscript sources---is openly available at \url{https://github.com/onder-ozturk/quantum-dice} and archived at \href{https://doi.org/10.5281/zenodo.20539619}{doi:10.5281/zenodo.20539619} (MIT-licensed).}}
+\title{Characterising Quantum Randomness under Classical Rejection Sampling in Quantum-Backend-as-a-Service Architectures: A Readout-Mitigated Hardware Study with a Fair-Dice Case Study}
 
-\markboth{Manuscript submitted to IEEE Transactions on Quantum Engineering, 2026}%
+\author{ÖNDER ÖZTÜRK\authorrefmark{1}}
+\address[1]{Information Technology Department, Rectorate, Kütahya Health Sciences University, Türkiye (e-mail: onder.ozturk@ksbu.edu.tr; ORCID: https://orcid.org/0000-0001-6460-9497)}
+\tfootnote{A reproducibility package---source code, seeded data, and manuscript sources---is openly available at \texttt{github.com/onder-ozturk/quantum-dice} and archived at \texttt{doi:10.5281/zenodo.20539619} (MIT-licensed).}
+
+\markboth{Öztürk: Quantum Randomness under Classical Rejection Sampling in QBaaS Architectures}
 {Öztürk: Quantum Randomness under Classical Rejection Sampling in QBaaS Architectures}
 
-\maketitle
+\corresp{Corresponding author: Önder Öztürk (e-mail: onder.ozturk@ksbu.edu.tr).}
 
 \begin{abstract}
 Quantum-backend-as-a-service (QBaaS) platforms expose raw quantum measurements through ordinary web APIs, where they are almost always post-processed \emph{classically} before use---most often by rejection (conditioning) onto a desired support. We study how device noise propagates through such classical post-processing, both theoretically and on real hardware, using a production-grade construction of mathematically fair dice as an exactly analysable case study (deployed in the backgammon variant ``Tavla''). Each die is three qubits: $H^{\otimes 3}$ yields a uniform superposition over eight basis states, and rejecting the outcomes $0$ and $7$ gives an exactly uniform law on $\{1,\dots,6\}$; two dice use the six-qubit product circuit. We prove a tight bound showing that rejection \emph{cannot remove} a raw hardware bias and amplifies it by at most $1/p(A)\le\tfrac43$, and a statistical-power analysis fixes the minimum bias each experiment can detect. On two $156$-qubit IBM Heron processors (five runs of $4000$ shots each) the post-rejection total-variation distance from uniform is $0.015\pm0.006$ and $0.032\pm0.006$; matrix-free readout-error mitigation roughly halves the bias on the noisier device (to $0.014\pm0.004$) but not on the cleaner one, where calibration noise dominates. We expose the sampler behind a thin QBaaS contract with explicit provenance/fallback metadata, and analyse the synchronous-fallback versus asynchronous-provenance trade-off. Seeded simulator experiments ($N=50{,}000$ rolls; marginal $\chi^2=10.1$ on $5$ d.o.f., $p=0.07$; joint $\chi^2=26.8$ on $35$ d.o.f., $p=0.84$) confirm the ideal statistics, and the entire study is reproducible from the released package.
@@ -39,9 +53,13 @@ Quantum-backend-as-a-service (QBaaS) platforms expose raw quantum measurements t
 fair dice, IBM Quantum, Qiskit, quantum-backend-as-a-service (QBaaS), quantum-classical interface, quantum random number generation, readout error mitigation, rejection sampling, statistical power, total variation distance.
 \end{IEEEkeywords}
 
+\titlepgskip=-15pt
+
+\maketitle
+
 \section{Introduction}
 
-\IEEEPARstart{Q}{uantum}-backend-as-a-service (QBaaS) platforms now let ordinary applications obtain measurement samples from explicitly constructed quantum circuits over a web API~\cite{ibmquantum2024}. In almost every such use the raw samples are not consumed directly: they are post-processed \emph{classically}---scaled, conditioned, or rejected---to land in the support and distribution the application needs. This classical post-processing sits on the critical boundary between a noisy quantum device and a deterministic client, and how device noise propagates across that boundary determines whether the service actually delivers what it advertises.
+\PARstart{Q}{uantum}-backend-as-a-service (QBaaS) platforms now let ordinary applications obtain measurement samples from explicitly constructed quantum circuits over a web API~\cite{ibmquantum2024}. In almost every such use the raw samples are not consumed directly: they are post-processed \emph{classically}---scaled, conditioned, or rejected---to land in the support and distribution the application needs. This classical post-processing sits on the critical boundary between a noisy quantum device and a deterministic client, and how device noise propagates across that boundary determines whether the service actually delivers what it advertises.
 
 We make this concrete with the most basic non-trivial instance: producing a \emph{mathematically fair} six-sided die. Three qubits in uniform superposition give eight equiprobable outcomes; rejecting two of them conditions onto an exactly uniform $\{1,\dots,6\}$ law. The construction is small enough to analyse exactly yet exhibits the full QBaaS pipeline---circuit, cloud dispatch, classical rejection, fallback---and we deploy it in a real mobile game, the backgammon variant ``Tavla'', where two independent dice determine every legal move and even small biases accumulate over many games. The fair die is therefore our running \emph{case study}, not the contribution; the contribution is a quantitative account of how rejection-based post-processing transports quantum-hardware noise, and the engineering contract that keeps the result auditable.
 
@@ -372,5 +390,7 @@ The author thanks the Qiskit open-source community; the Aer simulator made the r
 
 \bibliographystyle{IEEEtran}
 \bibliography{references}
+
+\EOD
 
 \end{document}
