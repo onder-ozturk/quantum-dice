@@ -24,7 +24,7 @@ A Readout-Mitigated Hardware Study with a Fair-Dice Case Study}
 
 \author{Önder Öztürk%
 \thanks{Ö. Öztürk is with the Information Technology Department, Rectorate, Kütahya Health Sciences University, Türkiye (ORCID: 0000-0001-6460-9497).}%
-\thanks{A reproducibility package---source code, seeded data, and manuscript sources---is openly available at \url{https://github.com/onder-ozturk/quantum-dice} (MIT-licensed).}}
+\thanks{A reproducibility package---source code, seeded data, and manuscript sources---is openly available at \url{https://github.com/onder-ozturk/quantum-dice} and archived at \href{https://doi.org/10.5281/zenodo.20539619}{doi:10.5281/zenodo.20539619} (MIT-licensed).}}
 
 \markboth{Manuscript submitted to IEEE Transactions on Quantum Engineering, 2026}%
 {Öztürk: Quantum Randomness under Classical Rejection Sampling in QBaaS Architectures}
@@ -360,7 +360,7 @@ The implementation, the seeded experimental data, the generation scripts, and th
 
 \section*{Reproducibility}
 
-All source code, the seeded experimental data, the analysis and figure scripts, and the manuscript sources are openly available~\cite{projectrepo} (tag \texttt{v1.7}, MIT-licensed). The simulator results are bit-for-bit reproducible: \texttt{generate\_experiments.py} runs the exact production circuit with \texttt{seed\_simulator}$=42$. The hardware runs used Qiskit Runtime \texttt{SamplerV2} at the default resilience level, \texttt{optimization\_level}$=1$ with the standard \texttt{translator} translation stage, and $4000$ shots per run; \texttt{run\_ibm\_experiment.py} (single-backend), \texttt{run\_ibm\_mitigated.py} (two-backend, mitigated), and \texttt{run\_ibm\_repeated.py} (the five-run, two-backend characterisation reported here) cover the hardware path, with M3 mitigation provided by \texttt{mthree} calibrated on $4000$ shots. Each script records the backend name, job ids, and the raw per-shot outcomes. Because hardware calibration drifts, exact device numbers are run-specific; the scripts and the saved JSON allow the procedure to be replayed on any backend.
+All source code, the seeded experimental data, the analysis and figure scripts, and the manuscript sources are openly available~\cite{projectrepo} (tag \texttt{v1.8}, archived at \href{https://doi.org/10.5281/zenodo.20539619}{doi:10.5281/zenodo.20539619}, MIT-licensed). The simulator results are bit-for-bit reproducible: \texttt{generate\_experiments.py} runs the exact production circuit with \texttt{seed\_simulator}$=42$. The hardware runs used Qiskit Runtime \texttt{SamplerV2} at the default resilience level, \texttt{optimization\_level}$=1$ with the standard \texttt{translator} translation stage, and $4000$ shots per run; \texttt{run\_ibm\_experiment.py} (single-backend), \texttt{run\_ibm\_mitigated.py} (two-backend, mitigated), and \texttt{run\_ibm\_repeated.py} (the five-run, two-backend characterisation reported here) cover the hardware path, with M3 mitigation provided by \texttt{mthree} calibrated on $4000$ shots. Each script records the backend name, job ids, and the raw per-shot outcomes. Because hardware calibration drifts, exact device numbers are run-specific; the scripts and the saved JSON allow the procedure to be replayed on any backend.
 
 \section*{Ethics Statement}
 
